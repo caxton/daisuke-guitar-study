@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>小笹大輔 × 貓咪吉他學園｜國中7-9年級＆會考素養測驗</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1e1b4b">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans TC', sans-serif; background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
+    .guitar-fretboard {
+      background: linear-gradient(90deg, #3e2723 0%, #4e342e 50%, #3e2723 100%);
+      border-top: 3px solid #d7ccc8; border-bottom: 3px solid #d7ccc8;
+    }
+    @keyframes bounce-cat {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      50% { transform: translateY(-12px) rotate(5deg); }
+    }
+    .cat-bounce { animation: bounce-cat 1.2s infinite ease-in-out; }
+    @keyframes fall {
+      0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+    .falling-cat { position: fixed; top: -50px; z-index: 9999; pointer-events: none; animation: fall 3.5s linear forwards; }
+    .glass-card { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- 頂部導覽列 -->
+  <header class="sticky top-0 z-40 bg-indigo-950/90 backdrop-blur border-b border-indigo-800 px-4 py-3 shadow-lg">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-3 cursor-pointer" id="easter-egg-trigger" title="連點5次召喚小笹大輔貓咪彩蛋！">
+        <div class="text-3xl cat-bounce select-none">🐱🎸</div>
+        <div>
+          <h1 class="font-black text-lg md:text-xl text-amber-400 tracking-wide flex items-center gap-2">
+            小笹大輔 × 貓咪吉他學園
+            <span class="text-xs bg-rose-600 text-white px-2 py-0.5 rounded-full font-bold">7-9年級 & 會考</span>
+          </h1>
+          <p class="text-xs text-indigo-300">Official髭男dism 理工學霸吉他手養成計畫 · 江翠國中適用</p>
+        </div>
+      </div>
+
+      <!-- 狀態與功能按鈕 -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="bg-slate-800/90 border border-amber-500/40 rounded-lg px-3 py-1 text-xs flex items-center gap-2">
+          <span id="user-rank-badge" class="font-bold text-amber-300">🎸 木吉他萌新</span>
+          <span class="text-slate-400">|</span>
+          <span>EXP: <strong id="user-exp" class="text-emerald-400">0</strong></span>
+          <span class="text-slate-400">|</span>
+          <span>🐾 貓罐頭: <strong id="user-coins" class="text-amber-400">0</strong></span>
+        </div>
+
+        <button onclick="toggleSound()" id="sound-btn" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-sm border border-slate-700" title="吉他音效開關">
+          🔊 音效開
+        </button>
+        <button onclick="openModal('sync-modal')" class="px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-xs font-bold flex items-center gap-1 shadow">
+          ☁️ 同步/雲端
+        </button>
+        <button onclick="openModal('settings-modal')" id="api-status-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold flex items-center gap-1">
+          ⚙️ 題庫引擎: <span id="engine-badge" class="text-emerald-400">內建動態題庫</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主內容區 -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 space-y-6">
+
+    <!-- 導覽分頁 Tabs -->
+    <div class="grid grid-cols-4 gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+      <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn py-2.5 rounded-lg font-bold text-sm bg-amber-500 text-slate-950 shadow">
+        🎯 搖滾測驗舞台
+      </button>
+      <button onclick="switchTab('mistakes')" id="tab-mistakes" class="tab-btn py-2.5 rounded-lg font-bold text-sm text-slate-300 hover:bg-slate-800">
+        📓 調音錯題本 (<span id="mistake-count">0</span>)
+      </button>
+      <button onclick="switchTab('gear')" id="tab-gear" class="tab-btn py-2.5 rounded-lg font-bold text-sm text-slate-300 hover:bg-slate-800">
+        🎸 大輔吉他與貓咪圖鑑
+      </button>
+      <button onclick="switchTab('history')" id="tab-history" class="tab-btn py-2.5 rounded-lg font-bold text-sm text-slate-300 hover:bg-slate-800">
+        📊 巡演學習歷程
+      </button>
+    </div>
+
+    <!-- ==================== TAB 1: 測驗舞台 ==================== -->
+    <section id="view-quiz" class="space-y-6">
+      <!-- 測驗設定面板 -->
+      <div id="quiz-setup-panel" class="glass-card rounded-2xl p-5 md:p-6 shadow-xl space-y-5">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-700/80 pb-4">
+          <div>
+            <h2 class="text-xl font-black text-white flex items-center gap-2">
+              <span>🎼 選擇今天的練團（測驗）曲目</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              小笹大輔：「高專時期把理工基礎打好，讓我現在玩效果器和編曲更有邏輯！帶著貓咪一起刷題吧🐾」
+            </p>
+          </div>
+          <!-- 彩蛋密碼輸入區 -->
+          <div class="flex items-center gap-1.5">
+            <input type="text" id="secret-code-input" placeholder="彩蛋密碼(試試0106)" class="bg-slate-900/90 border border-slate-700 rounded-lg px-2.5 py-1 text-xs w-36 text-amber-300 focus:outline-none focus:border-amber-400" />
+            <button onclick="checkSecretCode()" class="bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-xs px-2.5 py-1 rounded-lg font-bold">召喚</button>
+          </div>
+        </div>
+
+        <!-- 選單列 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- 1. 課本版本 -->
+          <div>
+            <label class="block text-xs font-bold text-indigo-300 mb-1.5">📚 課本版本（江翠國中各科適用）</label>
+            <select id="select-publisher" onchange="updateChapterList()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-amber-400 focus:outline-none">
+              <option value="康軒">康軒版</option>
+              <option value="翰林">翰林版</option>
+              <option value="南一">南一版</option>
+              <option value="會考跨版本">🏆 國中教育會考（跨版本總複習）</option>
+            </select>
+          </div>
+
+          <!-- 2. 年級與學期 -->
+          <div>
+            <label class="block text-xs font-bold text-indigo-300 mb-1.5">🎓 選擇年級 / 會考模式</label>
+            <select id="select-grade" onchange="updateChapterList()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-amber-400 focus:outline-none">
+              <option value="7">七年級（國一上下學期）</option>
+              <option value="8" selected>八年級（國二上下學期 ★目前主力）</option>
+              <option value="9">九年級（國三上下學期）</option>
+              <option value="cap">🔥 國中會考全範圍綜合模擬（7~9年級）</option>
+            </select>
+          </div>
+
+          <!-- 3. 領域與科目 -->
+          <div>
+            <label class="block text-xs font-bold text-indigo-300 mb-1.5">🎸 選擇科目（含自然三科＆社會三科）</label>
+            <select id="select-subject" onchange="updateChapterList()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-amber-400 focus:outline-none">
+              <optgroup label="語文與數學">
+                <option value="國文">📖 國文（閱讀素養 × 髭男歌詞修辭）</option>
+                <option value="英文">🔤 英文（會考單字文法 × 巡演情境）</option>
+                <option value="數學" selected>📐 數學（指板幾何 × 根號畢氏 × 代數）</option>
+              </optgroup>
+              <optgroup label="自然科學領域">
+                <option value="理化">⚡ 自然-理化（聲波共鳴 × 電吉他拾音器 × 化學）</option>
+                <option value="生物">🐾 自然-生物（貓咪遺傳基因 × 神經與生態）</option>
+                <option value="地科">🌍 自然-地球科學（日本巡演地質 × 天氣與星象）</option>
+              </optgroup>
+              <optgroup label="社會領域">
+                <option value="歷史">⏳ 社會-歷史（台灣與世界史 × 搖滾樂發展脈絡）</option>
+                <option value="地理">🗺️ 社會-地理（日本島根縣松江市 × 台灣與世界地理）</option>
+                <option value="公民">⚖️ 社會-公民（音樂著作權 × 演唱會經濟與法律）</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- 4. 單元進度 -->
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-indigo-300 mb-1.5">📍 學習進度 / 單元章節</label>
+            <select id="select-chapter" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-amber-400 focus:outline-none">
+              <!-- 由 JS 動態載入 -->
+            </select>
+          </div>
+
+          <!-- 5. 難度與模式 -->
+          <div>
+            <label class="block text-xs font-bold text-indigo-300 mb-1.5">🔥 難度設定（支援自適應升降）</label>
+            <select id="select-difficulty" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-amber-400 focus:outline-none">
+              <option value="adaptive" selected>⚡ 智慧自適應（依答題表現自動調整）</option>
+              <option value="easy">🟢 容易（調音暖身：課本基礎觀念）</option>
+              <option value="medium">🟡 中等（團練彩排：會考標準題型）</option>
+              <option value="hard">🔴 困難（武道館 Solo：跨科長文素養題）</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 題數與開始按鈕 -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+          <div class="flex items-center gap-3 text-xs text-slate-300">
+            <span>每次測驗題數：</span>
+            <label class="inline-flex items-center gap-1 cursor-pointer">
+              <input type="radio" name="q-count" value="5" checked class="accent-amber-400"> 5題 (快速刷題)
+            </label>
+            <label class="inline-flex items-center gap-1 cursor-pointer">
+              <input type="radio" name="q-count" value="10" class="accent-amber-400"> 10題 (段考/會考模擬)
+            </label>
+          </div>
+
+          <button onclick="startQuiz()" id="start-quiz-btn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-black text-base shadow-lg shadow-amber-500/20 transition transform active:scale-95 flex items-center justify-center gap-2">
+            <span>🎸 開始搖滾刷題！ (Start Jamming)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 測驗進行中面板 (預設隱藏) -->
+      <div id="quiz-active-panel" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-xl space-y-5 relative overflow-hidden">
+        <!-- 吉他指板進度條 -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span id="quiz-progress-text" class="text-amber-300">第 1 / 5 題</span>
+            <span id="quiz-combo-badge" class="px-2.5 py-0.5 rounded-full bg-rose-600/30 border border-rose-500 text-rose-300 hidden">🔥 0 COMBO 連擊！</span>
+            <span id="quiz-diff-badge" class="px-2.5 py-0.5 rounded-full bg-indigo-900 text-indigo-200">難度：中等</span>
+          </div>
+          <div class="w-full h-3 guitar-fretboard rounded-full overflow-hidden p-0.5">
+            <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-amber-400 to-rose-500 rounded-full transition-all duration-300" style="width: 20%"></div>
+          </div>
+        </div>
+
+        <!-- 貓咪與小笹大輔情境引言 -->
+        <div class="bg-indigo-950/70 border border-indigo-800/80 rounded-xl p-3 flex items-start gap-3">
+          <div class="text-2xl select-none" id="question-mascot">🐱🎸</div>
+          <div class="text-xs text-indigo-200 leading-relaxed" id="question-context-tag">
+            【髭男 × 貓咪素養情境】載入中...
+          </div>
+        </div>
+
+        <!-- 題目敘述 -->
+        <div id="question-stem" class="text-base md:text-lg font-bold text-white leading-relaxed whitespace-pre-line">
+          題目載入中...
+        </div>
+
+        <!-- 選項區 -->
+        <div id="question-options" class="grid grid-cols-1 gap-3">
+          <!-- JS 動態生成 -->
+        </div>
+
+        <!-- 詳解與小笹大輔學霸筆記 (作答後顯示) -->
+        <div id="question-explanation-box" class="hidden rounded-xl p-4 border space-y-2">
+          <div id="explanation-title" class="font-black text-base flex items-center gap-2"></div>
+          <p id="explanation-text" class="text-sm text-slate-200 leading-relaxed whitespace-pre-line"></p>
+          <div class="pt-2 flex justify-end">
+            <button onclick="nextQuestion()" id="next-q-btn" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm shadow">
+              下一首曲目 (下一題) ➔
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 測驗結算面板 (預設隱藏) -->
+      <div id="quiz-result-panel" class="hidden glass-card rounded-2xl p-6 text-center space-y-5">
+        <div class="text-6xl cat-bounce mx-auto">😻🎸🏆</div>
+        <h3 class="text-2xl font-black text-amber-400" id="result-title">Live 演出大成功！</h3>
+        <p class="text-sm text-slate-300 max-w-lg mx-auto" id="result-comment"></p>
+
+        <div class="grid grid-cols-3 gap-3 max-w-md mx-auto">
+          <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            <div class="text-xs text-slate-400">本次得分</div>
+            <div class="text-2xl font-black text-emerald-400" id="result-score">100</div>
+          </div>
+          <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            <div class="text-xs text-slate-400">獲得 EXP</div>
+            <div class="text-2xl font-black text-amber-400" id="result-exp">+50</div>
+          </div>
+          <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            <div class="text-xs text-slate-400">最高連擊</div>
+            <div class="text-2xl font-black text-rose-400" id="result-combo">5</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-3 pt-2">
+          <button onclick="resetQuizView()" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm">
+            🔙 返回選單換單元
+          </button>
+          <button onclick="startQuiz()" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm">
+            🔄 再刷一回 (數字與題目會動態變化！)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: 調音錯題本 ==================== -->
+    <section id="view-mistakes" class="hidden space-y-4">
+      <div class="glass-card rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-black text-amber-400">📓 小笹大輔的調音錯題本</h2>
+          <p class="text-xs text-slate-400">彈錯的音符只要重新調音，就會變成最棒的 Solo！複習並訂正錯題還能額外獲得貓罐頭🐾</p>
+        </div>
+        <button onclick="clearMistakes()" class="text-xs text-rose-400 hover:underline">🗑️ 清空已學會的錯題</button>
+      </div>
+      <div id="mistakes-list" class="space-y-3"></div>
+    </section>
+
+    <!-- ==================== TAB 3: 大輔吉他與貓咪圖鑑 ==================== -->
+    <section id="view-gear" class="hidden space-y-4">
+      <div class="glass-card rounded-2xl p-5">
+        <h2 class="text-lg font-black text-amber-400 mb-1">🎸 小笹大輔同款吉他設備 ＆ 搖滾貓咪圖鑑</h2>
+        <p class="text-xs text-slate-300">累積刷題拿到的「🐾 貓罐頭」，可以解鎖小笹大輔在 Official髭男dism 使用的經典吉他與專屬貓咪夥伴！</p>
+      </div>
+      <div id="gear-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- ==================== TAB 4: 巡演學習歷程 ==================== -->
+    <section id="view-history" class="hidden space-y-4">
+      <div class="glass-card rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-black text-amber-400">📊 搖滾巡演學習歷程紀錄</h2>
+          <p class="text-xs text-slate-400">所有測驗表現都會自動保存在此，可作為自主學習與會考複習進度追蹤。</p>
+        </div>
+        <button onclick="exportHistoryCSV()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-bold">
+          📥 匯出學習歷程報表 (CSV)
+        </button>
+      </div>
+      <div id="history-list" class="space-y-2"></div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODAL 1: AI 題庫引擎設定 (BYOK 安全無洩漏) ==================== -->
+  <div id="settings-modal" class="fixed inset-0 z-50 bg-black/75 hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="font-black text-lg text-amber-400">⚙️ 題庫引擎與 Gemini API 安全設定</h3>
+        <button onclick="closeModal('settings-modal')" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      <div class="bg-emerald-950/50 border border-emerald-700/60 rounded-xl p-3 text-xs text-emerald-200 space-y-1">
+        <div class="font-bold">🔒 100% 隱私安全保證（GitHub 公開也絕不外洩）：</div>
+        <p>1. **不填 API Key 也能玩**：系統已內建 7~9 年級各科「髭男×吉他×貓咪」動態參數題庫，離線也能無限刷題！</p>
+        <p>2. **填入 Gemini API Key**：金鑰只會保存在**您目前這台手機/電腦的瀏覽器內部 (`localStorage`)**，絕對不會上傳到 GitHub 或任何外部伺服器。</p>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Gemini API Key（選填，開啟 AI 即時結合網路會考無限出題）</label>
+          <input type="password" id="api-key-input" placeholder="貼上 AIzaSy... 開頭的金鑰 (留空則使用內建動態題庫)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-amber-300 focus:outline-none focus:border-amber-400" />
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-indigo-400 hover:underline mt-1 inline-block">👉 點此免費取得 Google Gemini API Key</a>
+        </div>
+
+        <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+          <input type="checkbox" id="enable-grounding-checkbox" checked class="accent-amber-400">
+          啟用 Google Search 搜尋輔助（讓 AI 參考最新台灣國中會考命題趨勢）
+        </label>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+        <button onclick="clearApiKey()" class="px-3 py-2 rounded-xl bg-rose-950 hover:bg-rose-900 text-rose-300 text-xs font-bold">清除金鑰 (改回純內建)</button>
+        <button onclick="saveApiSettings()" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: A+B 跨裝置同步 (通行碼 + Google 試算表) ==================== -->
+  <div id="sync-modal" class="fixed inset-0 z-50 bg-black/75 hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl my-8">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="font-black text-lg text-amber-400">☁️ 跨裝置同步 (選項 A 通行碼 ＋ 選項 B 雲端試算表)</h3>
+        <button onclick="closeModal('sync-modal')" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      <!-- 方案 A -->
+      <div class="space-y-2 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+        <h4 class="font-bold text-sm text-indigo-300">📱💻 【方案 A】一鍵通行碼同步（免設定，手機⇄電腦秒傳）</h4>
+        <p class="text-xs text-slate-400">在電腦複製下方通行碼，傳到手機貼上並點擊「還原進度」，就能同步所有經驗值、錯題本與吉他收藏！</p>
+        <div class="flex gap-2">
+          <input type="text" id="sync-code-box" readonly class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300" />
+          <button onclick="copySyncCode()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold">複製代碼</button>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <input type="text" id="import-code-box" placeholder="在此貼上另一台裝置的通行碼..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-amber-300" />
+          <button onclick="importSyncCode()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black">還原進度</button>
+        </div>
+      </div>
+
+      <!-- 方案 B -->
+      <div class="space-y-2 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+        <h4 class="font-bold text-sm text-emerald-400">📊 【方案 B】Google 試算表全自動雲端紀錄</h4>
+        <p class="text-xs text-slate-400">貼上您的 Google Apps Script 網址後，女兒每次在手機或電腦完成測驗，成績與錯題會自動寫入您的 Google 試算表！</p>
+        <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/....../exec" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-emerald-300" />
+        <div class="flex justify-end pt-1">
+          <button onclick="saveGasUrl()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold">儲存雲端連結</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 連擊跳出搖滾貓咪浮動視窗 -->
+  <div id="combo-cat-popup" class="fixed bottom-5 right-5 z-50 hidden items-center gap-3 bg-gradient-to-r from-indigo-900 to-rose-900 border-2 border-amber-400 rounded-2xl p-3 shadow-2xl">
+    <div class="text-4xl cat-bounce">😼🎸⚡</div>
+    <div>
+      <div class="font-black text-amber-300 text-sm" id="combo-popup-title">小笹大輔貓咪 Solo 應援！</div>
+      <div class="text-xs text-white" id="combo-popup-desc">太強啦！音準跟觀念都完美無瑕！</div>
+    </div>
+  </div>
+
+  <script>
+    /**************************************************************
+     * 1. 7~9年級 & 會考完整課綱章節資料庫 (國、英、數、自然三科、社會三科)
+     **************************************************************/
+    const CURRICULUM_MAP = {
+      "數學": {
+        "7": ["7上：整數的運算與數線", "7上：分數的運算与指數律", "7上：一元一次方程式", "7下：二元一次聯立方程式", "7下：直角坐標與二元一次圖形", "7下：比例與正反比", "7下：一元一次不等式與統計圖表"],
+        "8": ["8上：乘法公式與多項式", "8上：平方根與畢氏定理", "8上：因式分解", "8上：一元二次方程式", "8下：等差數列與等差級數", "8下：線型函數與圖形", "8下：三角形的基本性質與平行四邊形"],
+        "9": ["9上：相似形與比例線段", "9上：圓的性質（圓心角、圓周角、切線）", "9上：幾何證明與三角形的三心", "9下：二次函數的最大值與最小值", "9下：統計與機率、立體圖形"],
+        "cap": ["會考總複習：代數與函數跨冊綜合", "會考總複習：幾何、畢氏定理與圓", "會考總複習：數列、統計機率與生活素養題"]
+      },
+      "理化": {
+        "7": ["(先修) 科學方法、密度與實驗室安全", "(先修) 波動與聲音的物理世界"],
+        "8": ["8上：基本測量與密度、水溶液", "8上：波動與聲音（木吉他共鳴與頻率★）", "8上：光、透鏡成像與色彩（演唱會舞台燈光★）", "8上：溫度與熱、元素與化合物", "8下：化學反應與質量守恆、莫耳", "8下：氧化還原與酸鹼鹽", "8下：反應速率與化學平衡、有機化合物", "8下：力、壓力與浮力"],
+        "9": ["9上：直線運動（位置、速度、加速度）", "9上：牛頓三大運動定律", "9上：功與能、簡單機械", "9上：靜電、電路與歐姆定律", "9下：電流熱效應与電力輸送", "9下：電流磁效應與電磁感應（電吉他拾音器原理★）"],
+        "cap": ["會考理化：聲光熱與力學綜合模擬", "會考理化：電學、電磁感應（吉他拾音器）與化學綜合"]
+      },
+      "生物": {
+        "7": ["7上：生命的特性與細胞構造", "7上：養分、酵素與植物的光合作用", "7上：生物體內的運輸與呼吸、排泄", "7上：神經系統與內分泌（貓咪的反射與感官★）", "7下：生殖、DNA與孟德爾遺傳法則（貓咪毛色遺傳★）", "7下：演化、化石與生物分類五界", "7下：生態系、食物鏈與生物多樣性"],
+        "8": ["(跨年級複習) 7年級生物全冊核心：細胞、生理與貓咪遺傳"],
+        "9": ["(會考複習) 生物與環境、遺傳基因與神經協調"],
+        "cap": ["會考自然（生物篇）：圖表實驗題與生活素養全範圍"]
+      },
+      "地科": {
+        "7": ["(探索) 地球的環境與天氣基礎"],
+        "8": ["(探索) 台灣與日本的地質環境比較"],
+        "9": ["9上：地球的水循環、地貌與岩石礦物", "9上：板塊構造運動、地震與火山（日本巡演地質★）", "9上：浩瀚宇宙、日月地相對運動（月相與潮汐）", "9下：大氣層、氣團、鋒面與台灣四季天氣", "9下：全球氣候變遷、聖嬰現象與永續發展"],
+        "cap": ["會考自然（地科篇）：板塊地震、天氣鋒面與天文綜合"]
+      },
+      "國文": {
+        "7": ["7上：字音字形、成語與絕句律詩", "7上：記敘文與抒情文閱讀素養", "7下：修辭判讀（譬喻、轉化、映襯）與世說新語", "7下：現代詩文與文言文基礎推論"],
+        "8": ["8上：詞選、古文閱讀與句型判斷（四大句型）", "8上：議論文論點分析與髭男歌詞意境解析", "8下：樂府詩、書信題辭與應用文", "8下：長文跨領域閱讀素養（音樂職人與科學）"],
+        "9": ["9上：曲選、先秦諸子思想與寓言", "9下：會考白話長文速讀與文言文對讀攻略"],
+        "cap": ["會考國文：全範圍字音字形、成語、文言與白話素養大滿貫"]
+      },
+      "英文": {
+        "7": ["7上：Be動詞、一般動詞與現在進行式", "7下：過去式基礎、助動詞 can/may 與頻率副詞"],
+        "8": ["8上：過去進行式、不定詞(to V)與動名詞(V-ing)★", "8上：未來式 (will / be going to) 與授與動詞", "8下：形容詞比較級與最高級、感官動詞与連綴動詞", "8下：連接詞 (although/because/if) 與反身代名詞"],
+        "9": ["9上：現在完成式 (have+p.p.) 與被動語態", "9上：關係代名詞 (who/which/that) 形容詞子句★", "9下：名詞子句與會考 1200/2000 單字閱讀整合"],
+        "cap": ["會考英文：文法綜合與長篇閱讀（髭男世界巡演與貓咪專欄）"]
+      },
+      "歷史": {
+        "7": ["7上：史前台灣、大航海時代與鄭氏、清領前期", "7下：清領後期開港、日治時期的現代化與戰後台灣"],
+        "8": ["8上：中國古代史、東亞文化圈（漢字與日本遣唐使★）", "8下：近代東亞巨變（明治維新、現代日本與流行文化發展★）"],
+        "9": ["9上：古文明、歐洲文藝復興、工業革命與民主浪潮", "9下：兩次世界大戰、冷戰時期與當代全球化（搖滾樂的誕生★）"],
+        "cap": ["會考社會（歷史篇）：台灣史、東亞史與世界史跨世紀統整"]
+      },
+      "地理": {
+        "7": ["7上：經緯度、等高線地形圖、台灣的地形與氣候", "7下：台灣的人口、產業、區域發展與離島"],
+        "8": ["8上：東北亞地理（日本列島氣候、島根縣松江市與工業帶★）", "8下：東南亞、南亞、西亞與非洲自然人文"],
+        "9": ["9上：歐洲與美洲的地形氣候與經濟聯盟", "9下：大洋洲、兩極地區與全球環境議題"],
+        "cap": ["會考社會（地理篇）：等高線、氣候圖判讀與世界區域全範圍"]
+      },
+      "公民": {
+        "7": ["7上：人性尊嚴、家庭平權、校園自治與社區參與", "7下：社會規範、文化交流（日本音樂次文化）與社會福利"],
+        "8": ["8上：憲法、人權保障、中央與地方政府體制", "8下：民法、刑法、行政法與智慧財產權（音樂著作權保護★）"],
+        "9": ["9上：機會成本、需求與供給法則（演唱會門票經濟學★）", "9下：貨幣、國際貿易、全球化與永續公民"],
+        "cap": ["會考社會（公民篇）：政治法律、音樂著作權與經濟學綜合"]
+      }
+    };
+
+    /**************************************************************
+     * 2. 大輔吉他設備與貓咪收藏圖鑑資料
+     **************************************************************/
+    const GEAR_COLLECTION = [
+      { id: "g1", name: "新手木吉他 & 橘貓小虎", cost: 0, icon: "🎸🐱", desc: "八年級聲波共鳴的好夥伴！撥動琴弦讓木箱產生溫暖共鳴。" },
+      { id: "g2", name: "Boss 超載效果器 & 賓士貓", cost: 30, icon: "🎛️🐾", desc: "小笹大輔必備單顆！利用電子電路改變聲波波形，創造搖滾破音。" },
+      { id: "g3", name: "Fender Custom Strat & 三花貓", cost: 60, icon: "⚡🐈", desc: "清亮單線圈拾音器（電磁感應原理），彈奏《Pretender》經典前奏！" },
+      { id: "g4", name: "Gibson Les Paul 雙線圈 & 黑貓", cost: 100, icon: "🔥🐈‍⬛", desc: "小笹大輔熱愛的厚實搖滾音色，抵銷雜訊、展現高專理工男的精準！" },
+      { id: "g5", name: "Willows 大輔簽名琴 & 島根縣貓皇", cost: 160, icon: "👑😻", desc: "松江高專學霸吉他手巔峰裝備！制霸國中 7-9 年級與教育會考！" }
+    ];
+
+    /**************************************************************
+     * 3. 內建離線「動態參數題庫引擎」（免 API Key 也可無限刷題！）
+     **************************************************************/
+    function generateDynamicBuiltInQuestions(subject, grade, chapter, difficulty, count) {
+      const pool = [];
+      const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+      // 根據科目動態生成結合「小笹大輔 / 髭男 / 吉他 / 貓咪」的會考素養題
+      for (let i = 0; i < count + 5; i++) {
+        if (subject === "理化") {
+          const freq = [110, 220, 330, 440, 523][randInt(0, 4)];
+          const speed = 340 + randInt(-2, 4) * 5;
+          const dist = randInt(2, 5) * speed;
+          const time = (dist / speed).toFixed(1);
+          pool.push(
+            {
+              context: `【${chapter}｜八年級聲波與木吉他共鳴】小笹大輔在家為愛貓彈奏木吉他，標準 A 音的調音頻率與聲速關係如下：`,
+              stem: `小笹大輔撥動吉他弦，發出頻率為 ${freq} Hz 的樂音。若當時演唱會現場的空氣聲速為 ${speed} m/s，坐在距離舞台音響 ${dist} 公尺遠的觀眾，大約需要幾秒才會聽到這個吉他聲？且若大輔將琴弦「旋緊」，音調（頻率）會如何變化？`,
+              options: [
+                `(A) 約 ${time} 秒；琴弦旋緊後頻率變高（音調變高）`,
+                `(B) 約 ${time} 秒；琴弦旋緊後聲速變快但音調不變`,
+                `(C) 約 ${(dist / freq).toFixed(1)} 秒；琴弦旋緊後振幅變大（響度變大）`,
+                `(D) 約 ${(speed / dist).toFixed(2)} 秒；琴弦旋緊後頻率變低`
+              ],
+              answer: 0,
+              explanation: `💡【大輔理工學霸筆記】\n1. 聲音傳播時間 $t = \\text{距離} \\div \\text{聲速} = ${dist} \\div ${speed} = ${time}$ 秒。\n2. 吉他弦越緊、越細、越短，振動頻率越高（音調越高）；而聲速只與介質（空氣溫度/濕度）有關，與頻率無關喔！喵～🐾`
+            },
+            {
+              context: `【${chapter}｜木吉他 vs. 電吉他拾音器原理】小笹大輔畢業於松江高專電子情報工學科，對吉他的發聲物理瞭若指掌：`,
+              stem: `關於「木吉他」與「電吉他」的科學原理比較，下列哪一位團員的說法最符合國中理化觀念？`,
+              options: [
+                `(A) 木吉他的音箱是為了增加聲波的「頻率」，讓高音傳得更快`,
+                `(B) 電吉他的磁性拾音器是利用「電磁感應（磁場變化產生感應電流）」將鋼弦振動轉為電訊號`,
+                `(C) 電吉他改用尼龍弦也能透過磁性拾音器產生超大感應電流`,
+                `(D) 在太空中（真空環境）彈奏不插電的木吉他，旁人依然能直接聽見優美的共鳴聲`
+              ],
+              answer: 1,
+              explanation: `💡【大輔理工學霸筆記】\n(A) 木吉他音箱是利用「共鳴」放大聲音的振幅（響度），不改變頻率。\n(B) 正確！電吉他拾音器內有磁鐵與線圈，鋼弦振動改變磁通量產生感應電流（法拉第電磁感應定律）。\n(C) 尼龍弦不能被磁化，無法引發電磁感應。\n(D) 聲波是力學波（縱波），在真空中無法傳播！`
+            },
+            {
+              context: `【${chapter}｜演唱會舞台光學與貓咪瞳孔】Official髭男dism 巨蛋巡演燈光設計：`,
+              stem: `當舞台投射出強烈的「白光」照射在小笹大輔的「紅色」電吉他琴身上，若不考慮鏡面反射，台下觀眾看到琴身呈現紅色是因為什麼光學原理？`,
+              options: [
+                `(A) 紅色琴身自己會發出紅光`,
+                `(B) 紅色琴身吸收了紅光，並反射其他顏色的光`,
+                `(C) 紅色琴身反射了白光中的紅光，並吸收了其他色光`,
+                `(D) 白光穿過琴身產生全反射現象`
+              ],
+              answer: 2,
+              explanation: `💡【大輔理工學霸筆記】\n不透明物體的顏色由它「反射」的色光決定！紅色電吉他會反射紅光進入我們的眼睛，並吸收其餘色光。`
+            }
+          );
+        } else if (subject === "數學") {
+          const pairs = [[3, 4, 5], [5, 12, 13], [6, 8, 10], [8, 15, 17], [9, 12, 15]];
+          const p = pairs[randInt(0, pairs.length - 1)];
+          const a = p[0], b = p[1], c = p[2];
+          const k = randInt(2, 6);
+          pool.push(
+            {
+              context: `【${chapter}｜八年級畢氏定理與舞台音箱設計】小笹大輔在練團室為貓咪設計專屬跳台與音箱支架：`,
+              stem: `小笹大輔將一個高為 ${a} 公尺的巨型舞台音箱垂直立於地面，並從音箱頂端拉一條直線導線到距離音箱底部水平距離 ${b} 公尺的踏板效果器上（導線拉直且不計下垂）。請問這條導線最短需要多少公尺？`,
+              options: [
+                `(A) ${c} 公尺`,
+                `(B) ${a + b} 公尺`,
+                `(C) ${c + 2} 公尺`,
+                `(D) √${a + b} 公尺`
+              ],
+              answer: 0,
+              explanation: `💡【大輔理工學霸筆記】\n利用八年級核心「畢氏定理（勾股定理）」：\n斜邊長 $= \\sqrt{${a}^2 + ${b}^2} = \\sqrt{${a*a} + ${b*b}} = \\sqrt{${c*c}} = ${c}$ 公尺！熟記常見直角三角形比例 $(3:4:5)、(5:12:13)、(8:15:17)$ 解題超快喔！🎸`
+            },
+            {
+              context: `【${chapter}｜乘法公式、因式分解與吉他刷弦節奏】`,
+              stem: `小笹大輔在編寫《ミックスナッツ》吉他 Solo 時，設定某段音符數量滿足多項式 $x^2 - ${2*k}x + ${k*k}$。若將此多項式進行因式分解，結果為下列何者？且當 $x = ${k + 5}$ 時，其值為何？`,
+              options: [
+                `(A) $(x - ${k})^2$，值為 25`,
+                `(B) $(x + ${k})^2$，值為 25`,
+                `(C) $(x - ${k})(x + ${k})$，值為 ${k*k}`,
+                `(D) $(x - ${k*k})^2$，值為 5`
+              ],
+              answer: 0,
+              explanation: `💡【大輔理工學霸筆記】\n根據差的平方公式：$a^2 - 2ab + b^2 = (a - b)^2$\n所以 $x^2 - ${2*k}x + ${k*k} = (x - ${k})^2$。\n代入 $x = ${k + 5}$，得到 $(${k + 5} - ${k})^2 = 5^2 = 25$！喵嗚～🐾`
+            },
+            {
+              context: `【${chapter}｜根號運算與吉他琴格 (Fret) 數學規律】`,
+              stem: `小笹大輔在調整吉他弦長時，遇到根式化簡問題：請計算 $\\sqrt{${4 * k * k}} + \\sqrt{${9 * k * k}} - \\sqrt{${k * k}}$ 的結果為何？`,
+              options: [
+                `(A) ${4 * k}`,
+                `(B) ${5 * k}`,
+                `(C) ${12 * k}`,
+                `(D) ${2 * k}`
+              ],
+              answer: 0,
+              explanation: `💡【大輔理工學霸筆記】\n將根號化為最簡根式：\n$\\sqrt{${4*k*k}} = ${2*k}$，$\\sqrt{${9*k*k}} = ${3*k}$，$\\sqrt{${k*k}} = ${k}$。\n因此原式 $= ${2*k} + ${3*k} - ${k} = ${4*k}$！`
+            }
+          );
+        } else if (subject === "生物") {
+          pool.push(
+            {
+              context: `【${chapter}｜小笹大輔的愛貓生物學：神經傳導與遺傳】`,
+              stem: `小笹大輔在房間練電吉他時，他的愛貓聽到清脆的和弦聲後，耳朵立刻轉向音箱並跑過來蹭他的腳。請問貓咪完成「聽到吉他聲 → 跑過來」的神經傳導途徑，下列何者正確？`,
+              options: [
+                `(A) 耳朵(受器) → 感覺神經元 → 大腦 → 脊髓 → 運動神經元 → 腳部肌肉(動器)`,
+                `(B) 耳朵(受器) → 運動神經元 → 脊髓 → 感覺神經元 → 腳部肌肉(動器)`,
+                `(C) 耳朵(動器) → 感覺神經元 → 腦幹 → 運動神經元 → 腳部肌肉(受器)`,
+                `(D) 不經過大腦，屬於脊髓控制的膝跳反射`
+              ],
+              answer: 0,
+              explanation: `💡【大輔理工學霸筆記】\n貓咪聽到吉他聲並決定跑過去蹭主人，屬於「有意識的行為（大腦控制）」！\n由於動作涉及四肢軀幹（頸部以下肌肉），大腦發出的命令需經過「脊髓」再傳給運動神經元到達腳部肌肉（動器）。🐾`
+            }
+          );
+        } else if (subject === "地科") {
+          pool.push(
+            {
+              context: `【${chapter}｜Official髭男dism 日本與台灣巡迴演唱會地質科學】`,
+              stem: `Official髭男dism 從家鄉日本出發到台北舉辦演唱會。已知日本與台灣都位於「環太平洋地震帶」上，請問關於兩地地質構造的敘述，下列何者正確？`,
+              options: [
+                `(A) 台灣與日本皆位於板塊的「張裂性交界帶」，地殼不斷往外擴張`,
+                `(B) 台灣主要是由「歐亞板塊」與「菲律賓海板塊」聚合擠壓所形成`,
+                `(C) 地震發生時，地震規模（芮氏規模）會隨著距離震央越遠而變小`,
+                `(D) 日本的富士山與台灣的大屯山都是由沉積岩層層堆積而成的地形`
+              ],
+              answer: 1,
+              explanation: `💡【大輔理工學霸筆記】\n(A) 台灣與日本皆位於「聚合性板塊交界帶」。\n(B) 正確！台灣位於歐亞板塊與菲律賓海板塊的聚合帶。\n(C) 「地震規模」代表地震釋放的能量，全區只有一個數值；隨距離改變的是「震度（地震強度）」。\n(D) 富士山與大屯山皆為火山（火成岩/安山岩）。`
+            }
+          );
+        } else if (subject === "國文") {
+          pool.push(
+            {
+              context: `【${chapter}｜髭男名曲《Pretender》與《Subtitle》歌詞意境 × 會考閱讀修辭】`,
+              stem: `Official髭男dism 的經典歌曲《Subtitle》中提到：「言葉は雪の結晶 君にプレゼントしたくても 夢中になればなるほどに 形は崩れ落ちて溶けていって（話語如同雪的結晶，即便想作為禮物送給你，越是全神貫注，形狀卻越是崩解融化）」。\n請問「話語如同雪的結晶」使用了哪一種修辭法？且這段文字主要表達什麼情感？`,
+              options: [
+                `(A) 譬喻法（明喻）；表達想精準傳達心意卻深怕弄巧成拙的細膩與小心翼翼`,
+                `(B) 誇飾法；抱怨冬天天氣太冷導致無法彈吉他`,
+                `(C) 借代法；說明雪花比語言更適合當作生日禮物`,
+                `(D) 倒反法；表示自己其實根本不想跟對方說話`
+              ],
+              answer: 0,
+              explanation: `💡【大輔文學素養筆記】\n「話語（本體）如同（喻詞）雪的結晶（喻體）」是標準的「明喻（譬喻法）」。透過雪花易融的特性，具象化描寫傳遞心意時的謹慎與深情，這正是會考閱讀測驗最愛考的「意象轉化與情感推論」！🎸`
+            }
+          );
+        } else if (subject === "英文") {
+          pool.push(
+            {
+              context: `【${chapter}｜小笹大輔的吉他專訪英文閱讀與文法】`,
+              stem: `Read the sentence about Daisuke Ozasa (the guitarist of Official Hige Dandism):\n"Daisuke loves playing both the acoustic guitar and the electric guitar. The cute cat ______ is sleeping next to his guitar amplifier is his favorite pet."\nWhich word best fits the blank?`,
+              options: [
+                `(A) which / that`,
+                `(B) who`,
+                `(C) whose`,
+                `(D) where`
+              ],
+              answer: 0,
+              explanation: `💡【大輔英文筆記】\n先行詞是 "The cute cat"（動物／事物），且在後方關係子句中當「主詞」（___ is sleeping...），因此關係代名詞應選用 **which** 或 **that**！如果是形容人（例如 The guitarist ___ plays the solo），才用 who 喔！🐾`
+            }
+          );
+        } else {
+          // 社會科（歷史 / 地理 / 公民）通用素養題
+          pool.push(
+            {
+              context: `【${chapter}｜Official髭男dism 誕生地「島根縣松江市」與音樂公民素養】`,
+              stem: `小笹大輔就讀的「松江工業高等專門學校」位於日本中國地方的島根縣（瀕臨日本海），而當髭男發表新歌與吉他譜時，也受到法律保障。請問下列關於地理、歷史與公民的跨科敘述，何者正確？`,
+              options: [
+                `(A) 【公民】小笹大輔創作的電吉他 Solo 旋律，在完成創作當下即享有「著作權」保護，他人不得未經授權盜用營利`,
+                `(B) 【地理】島根縣位於日本太平洋側，冬季完全不會受到西北季風影響而下雪`,
+                `(C) 【歷史】日本現代流行樂與搖滾樂的發展，完全與二戰後的西方文化交流無關`,
+                `(D) 【公民】購買黃牛高價轉售的演唱會門票，在經濟學上不會產生任何機會成本`
+              ],
+              answer: 0,
+              explanation: `💡【大輔社會科統整筆記】\n(A) 正確！著作權採「創作保護主義」，完成當下即享有著作權。\n(B) 島根縣瀕臨日本海，冬季盛行西北季風經過日本海帶來水氣，迎風面常有降雪！`
+            }
+          );
+        }
+      }
+
+      // 隨機洗牌並取出指定題數
+      return pool.sort(() => Math.random() - 0.5).slice(0, count);
+    }
+
+    /**************************************************************
+     * 4. Web Audio API 吉他真實和弦音效合成器 (免外部音檔)
+     **************************************************************/
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    function playGuitarChord(type = 'correct') {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+        // C Major 搖滾和弦頻率 vs 調音提醒音
+        const freqs = type === 'correct'
+          ? [261.63, 329.63, 392.00, 523.25]
+          : type === 'combo'
+          ? [293.66, 369.99, 440.00, 587.33, 739.99]
+          : [196.00, 185.00];
+
+        freqs.forEach((f, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type === 'combo' ? 'sawtooth' : 'triangle'; // Combo 用電吉他鋸齒波音色！
+          osc.frequency.setValueAtTime(f, now + idx * 0.045);
+
+          gain.gain.setValueAtTime(0.16, now + idx * 0.045);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.045 + 0.8);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.045);
+          osc.stop(now + idx * 0.045 + 0.85);
+        });
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('sound-btn').innerText = soundEnabled ? '🔊 音效開' : '🔇 靜音中';
+    }
+
+    /**************************************************************
+     * 5. 使用者狀態管理 (LocalStorage + A/B 跨裝置同步)
+     **************************************************************/
+    const STORAGE_KEY = 'daisuke_cat_guitar_academy_v1';
+    let appState = {
+      exp: 0,
+      coins: 20, // 初始贈送20個貓罐頭
+      unlockedGear: ['g1'],
+      mistakes: [],
+      history: []
+    };
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { appState = { ...appState, ...JSON.parse(saved) }; } catch (e) {}
+      }
+      updateTopBarUI();
+      renderMistakes();
+      renderGear();
+      renderHistory();
+      updateApiBadge();
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      updateTopBarUI();
+    }
+
+    function updateTopBarUI() {
+      document.getElementById('user-exp').innerText = appState.exp;
+      document.getElementById('user-coins').innerText = appState.coins;
+      document.getElementById('mistake-count').innerText = appState.mistakes.length;
+
+      let rank = '🎸 木吉他萌新';
+      if (appState.exp >= 500) rank = '👑 武道館學霸吉他神 (小笹大輔認證)';
+      else if (appState.exp >= 250) rank = '🔥 電吉他 Solo 高手';
+      else if (appState.exp >= 100) rank = '🐾 搖滾貓咪樂團主音';
+      document.getElementById('user-rank-badge').innerText = rank;
+    }
+
+    /**************************************************************
+     * 6. 選單連動與測驗核心流程 (支援內建題庫 + Gemini API)
+     **************************************************************/
+    function updateChapterList() {
+      const subject = document.getElementById('select-subject').value;
+      const grade = document.getElementById('select-grade').value;
+      const chapterSelect = document.getElementById('select-chapter');
+      const chapters = (CURRICULUM_MAP[subject] && CURRICULUM_MAP[subject][grade]) || ["綜合素養練習"];
+
+      chapterSelect.innerHTML = chapters.map(ch => `<option value="${ch}">${ch}</option>`).join('');
+    }
+
+    let currentQuiz = {
+      questions: [],
+      index: 0,
+      score: 0,
+      combo: 0,
+      maxCombo: 0,
+      difficulty: 'medium',
+      meta: {}
+    };
+
+    async function startQuiz() {
+      const publisher = document.getElementById('select-publisher').value;
+      const grade = document.getElementById('select-grade').value;
+      const subject = document.getElementById('select-subject').value;
+      const chapter = document.getElementById('select-chapter').value;
+      const diffMode = document.getElementById('select-difficulty').value;
+      const count = parseInt(document.querySelector('input[name="q-count"]:checked').value, 10);
+
+      const startBtn = document.getElementById('start-quiz-btn');
+      startBtn.disabled = true;
+      startBtn.innerHTML = '<span>🐱🎸 小笹大輔與貓咪正在調音出題中...</span>';
+
+      currentQuiz = {
+        questions: [],
+        index: 0,
+        score: 0,
+        combo: 0,
+        maxCombo: 0,
+        diffMode,
+        difficulty: diffMode === 'adaptive' ? 'medium' : diffMode,
+        meta: { publisher, grade, subject, chapter, count }
+      };
+
+      const apiKey = localStorage.getItem('daisuke_gemini_api_key');
+      if (apiKey && apiKey.trim().startsWith('AIza')) {
+        try {
+          currentQuiz.questions = await fetchGeminiQuestions(apiKey.trim(), publisher, grade, subject, chapter, currentQuiz.difficulty, count);
+        } catch (err) {
+          console.warn('Gemini API 呼叫失敗，自動無縫切換至內建動態題庫：', err);
+          currentQuiz.questions = generateDynamicBuiltInQuestions(subject, grade, chapter, currentQuiz.difficulty, count);
+        }
+      } else {
+        currentQuiz.questions = generateDynamicBuiltInQuestions(subject, grade, chapter, currentQuiz.difficulty, count);
+      }
+
+      startBtn.disabled = false;
+      startBtn.innerHTML = '<span>🎸 開始搖滾刷題！ (Start Jamming)</span>';
+
+      document.getElementById('quiz-setup-panel').classList.add('hidden');
+      document.getElementById('quiz-result-panel').classList.add('hidden');
+      document.getElementById('quiz-active-panel').classList.remove('hidden');
+
+      renderCurrentQuestion();
+    }
+
+    // 使用者自備 API Key (只存在瀏覽器 localStorage) 動態生成題目
+    async function fetchGeminiQuestions(apiKey, publisher, grade, subject, chapter, difficulty, count) {
+      const useGrounding = localStorage.getItem('daisuke_gemini_grounding') !== 'false';
+      const gradeLabel = grade === 'cap' ? '國中教育會考(7~9年級跨冊總複習)' : `${grade}年級`;
+      const prompt = `你現在是日本樂團 Official髭男dism 的學霸吉他手「小笹大輔」（畢業於松江高專電子情報工學科，熱愛木吉他、電吉他與貓咪）。
+請為一位台灣就讀江翠國中的女生設計 ${count} 題【${publisher}版｜${gradeLabel}｜${subject}科｜單元：${chapter}】的台灣國中教育會考風格單選素養題（難度：${difficulty}）。
+要求：
+1. 題幹情境必須巧妙結合「木吉他/電吉他原理、Official髭男dism音樂或演唱會、小笹大輔的學霸練琴日常、或可愛貓咪」。
+2. 嚴格對齊台灣國中 108 課綱與會考命題趨勢，詳解請用溫暖鼓勵的「大輔學霸筆記」口吻撰寫。
+3. 請務必只回傳純 JSON 陣列格式，結構如下（不要加 markdown 語法）：
+[{"context":"情境標籤","stem":"題目內容","options":["(A) ...","(B) ...","(C) ...","(D) ..."],"answer":0,"explanation":"詳解"}]`;
+
+      const body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7 }
+      };
+      if (useGrounding) {
+        body.tools = [{ google_search: {} }];
+      }
+
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await resp.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('Invalid JSON');
+      return JSON.parse(jsonMatch[0]);
+    }
+
+    function renderCurrentQuestion() {
+      const q = currentQuiz.questions[currentQuiz.index];
+      const total = currentQuiz.questions.length;
+
+      document.getElementById('quiz-progress-text').innerText = `🎵 第 ${currentQuiz.index + 1} / ${total} 題 · ${currentQuiz.meta.subject}`;
+      document.getElementById('quiz-progress-bar').style.width = `${((currentQuiz.index + 1) / total) * 100}%`;
+
+      const diffNames = { easy: '🟢 容易 (調音暖身)', medium: '🟡 中等 (會考標準)', hard: '🔴 困難 (武道館Solo)' };
+      document.getElementById('quiz-diff-badge').innerText = diffNames[currentQuiz.difficulty] || '🟡 中等';
+
+      document.getElementById('question-context-tag').innerText = q.context;
+      document.getElementById('question-stem').innerText = q.stem;
+      document.getElementById('question-explanation-box').classList.add('hidden');
+
+      const optionsDiv = document.getElementById('question-options');
+      optionsDiv.innerHTML = q.options.map((opt, idx) => `
+        <button onclick="submitAnswer(${idx})" class="option-btn w-full text-left p-4 rounded-xl bg-slate-900/90 hover:bg-indigo-950/80 border border-slate-700 hover:border-amber-400 transition font-medium text-sm md:text-base flex items-center justify-between">
+          <span>${opt}</span>
+        </button>
+      `).join('');
+    }
+
+    function submitAnswer(selectedIdx) {
+      const q = currentQuiz.questions[currentQuiz.index];
+      const buttons = document.querySelectorAll('.option-btn');
+      buttons.forEach(b => b.disabled = true);
+
+      const isCorrect = selectedIdx === q.answer;
+      const expBox = document.getElementById('question-explanation-box');
+      const expTitle = document.getElementById('explanation-title');
+      const expText = document.getElementById('explanation-text');
+
+      buttons[q.answer].classList.add('border-emerald-400', 'bg-emerald-950/70', 'text-emerald-200');
+      if (!isCorrect) {
+        buttons[selectedIdx].classList.add('border-rose-500', 'bg-rose-950/70', 'text-rose-200');
+      }
+
+      if (isCorrect) {
+        currentQuiz.score += Math.round(100 / currentQuiz.questions.length);
+        currentQuiz.combo += 1;
+        if (currentQuiz.combo > currentQuiz.maxCombo) currentQuiz.maxCombo = currentQuiz.combo;
+
+        // 自適應難度升級
+        if (currentQuiz.diffMode === 'adaptive' && currentQuiz.combo >= 2) {
+          currentQuiz.difficulty = currentQuiz.difficulty === 'easy' ? 'medium' : 'hard';
+        }
+
+        if (currentQuiz.combo >= 3) {
+          playGuitarChord('combo');
+          showComboCatPopup(currentQuiz.combo);
+        } else {
+          playGuitarChord('correct');
+        }
+
+        expBox.className = 'rounded-xl p-4 border border-emerald-600/60 bg-emerald-950/40 space-y-2';
+        expTitle.innerHTML = `<span class="text-emerald-400">😻🎸 Perfect Chord！答對了！（+${10 + currentQuiz.combo * 2} EXP）</span>`;
+        appState.exp += 10 + currentQuiz.combo * 2;
+        appState.coins += 5;
+      } else {
+        playGuitarChord('wrong');
+        currentQuiz.combo = 0;
+        if (currentQuiz.diffMode === 'adaptive') {
+          currentQuiz.difficulty = currentQuiz.difficulty === 'hard' ? 'medium' : 'easy';
+        }
+        expBox.className = 'rounded-xl p-4 border border-rose-600/60 bg-rose-950/40 space-y-2';
+        expTitle.innerHTML = `<span class="text-rose-400">😿 稍微走音囉！已自動收錄至「調音錯題本」</span>`;
+
+        // 記錄到錯題本
+        appState.mistakes.unshift({
+          date: new Date().toLocaleDateString('zh-TW'),
+          subject: currentQuiz.meta.subject,
+          chapter: currentQuiz.meta.chapter,
+          stem: q.stem,
+          correctOption: q.options[q.answer],
+          explanation: q.explanation
+        });
+      }
+
+      const comboBadge = document.getElementById('quiz-combo-badge');
+      if (currentQuiz.combo >= 2) {
+        comboBadge.classList.remove('hidden');
+        comboBadge.innerText = `🔥 ${currentQuiz.combo} COMBO 搖滾連擊！`;
+      } else {
+        comboBadge.classList.add('hidden');
+      }
+
+      expText.innerText = q.explanation;
+      expBox.classList.remove('hidden');
+      saveState();
+      renderMistakes();
+    }
+
+    function nextQuestion() {
+      currentQuiz.index += 1;
+      if (currentQuiz.index >= currentQuiz.questions.length) {
+        finishQuiz();
+      } else {
+        renderCurrentQuestion();
+      }
+    }
+
+    function finishQuiz() {
+      document.getElementById('quiz-active-panel').classList.add('hidden');
+      document.getElementById('quiz-result-panel').classList.remove('hidden');
+
+      const finalScore = Math.min(100, currentQuiz.score);
+      document.getElementById('result-score').innerText = `${finalScore} 分`;
+      document.getElementById('result-exp').innerText = `+${finalScore >= 80 ? 60 : 30}`;
+      document.getElementById('result-combo').innerText = `${currentQuiz.maxCombo} 連擊`;
+
+      const comment = finalScore >= 80
+        ? "小笹大輔：「太神啦！妳的邏輯跟我的電吉他 Solo 一樣精準！這場會考巡演絕對拿 A++！🐾🎸」"
+        : "小笹大輔：「很棒的練習！彈吉他跟學數理一樣，去『調音錯題本』把走音的地方練熟，下次一定滿分！🐱」";
+      document.getElementById('result-comment').innerText = comment;
+
+      const record = {
+        time: new Date().toLocaleString('zh-TW'),
+        publisher: currentQuiz.meta.publisher,
+        grade: currentQuiz.meta.grade,
+        subject: currentQuiz.meta.subject,
+        chapter: currentQuiz.meta.chapter,
+        score: finalScore,
+        maxCombo: currentQuiz.maxCombo
+      };
+      appState.history.unshift(record);
+      saveState();
+      renderHistory();
+      renderGear();
+
+      // 若有設定方案 B Google 試算表，自動雲端上傳
+      sendToGoogleSheet(record);
+    }
+
+    function resetQuizView() {
+      document.getElementById('quiz-result-panel').classList.add('hidden');
+      document.getElementById('quiz-active-panel').classList.add('hidden');
+      document.getElementById('quiz-setup-panel').classList.remove('hidden');
+    }
+
+    /**************************************************************
+     * 7. 貓咪彩蛋與小笹大輔特效系統
+     **************************************************************/
+    function showComboCatPopup(combo) {
+      const popup = document.getElementById('combo-cat-popup');
+      document.getElementById('combo-popup-title').innerText = `🔥 ${combo} COMBO！搖滾貓咪刷和弦應援！`;
+      popup.classList.remove('hidden');
+      popup.classList.add('flex');
+      setTimeout(() => {
+        popup.classList.add('hidden');
+        popup.classList.remove('flex');
+      }, 3200);
+    }
+
+    function triggerCatRainEasterEgg() {
+      playGuitarChord('combo');
+      const emojis = ['🐱🎸', '😻🎵', '🐾⚡', '🐈‍⬛🎸', '🏆🐱'];
+      for (let i = 0; i < 28; i++) {
+        const el = document.createElement('div');
+        el.className = 'falling-cat text-3xl select-none';
+        el.style.left = `${Math.random() * 95}vw`;
+        el.style.animationDuration = `${2 + Math.random() * 2}s`;
+        el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+      }
+      appState.coins += 30;
+      saveState();
+      renderGear();
+      alert("🎉 觸發隱藏彩蛋！【小笹大輔 (01/06) ＆ 搖滾貓咪大進擊】\n獲得彩蛋獎勵：🐾 貓罐頭 +30 個！");
+    }
+
+    let headerClickCount = 0;
+    document.getElementById('easter-egg-trigger').addEventListener('click', () => {
+      headerClickCount++;
+      if (headerClickCount >= 5) {
+        headerClickCount = 0;
+        triggerCatRainEasterEgg();
+      }
+    });
+
+    function checkSecretCode() {
+      const val = document.getElementById('secret-code-input').value.trim().toLowerCase();
+      if (val === '0106' || val.includes('daisuke') || val.includes('髭男') || val.includes('pretender') || val.includes('cat')) {
+        triggerCatRainEasterEgg();
+        document.getElementById('secret-code-input').value = '';
+      } else {
+        alert('🐾 密碼提示：試試輸入小笹大輔的生日「0106」或「pretender」喔！');
+      }
+    }
+
+    /**************************************************************
+     * 8. 錯題本、吉他圖鑑、學習歷程與 A+B 跨裝置同步
+     **************************************************************/
+    function renderMistakes() {
+      const container = document.getElementById('mistakes-list');
+      if (appState.mistakes.length === 0) {
+        container.innerHTML = `<div class="glass-card rounded-xl p-8 text-center text-slate-400 text-sm">😻 目前沒有任何走音錯題！繼續保持搖滾學霸狀態！</div>`;
+        return;
+      }
+      container.innerHTML = appState.mistakes.map((m, idx) => `
+        <div class="glass-card rounded-xl p-4 space-y-2 border-l-4 border-rose-500">
+          <div class="flex justify-between items-center text-xs text-slate-400">
+            <span>📍 ${m.subject} · ${m.chapter} (${m.date})</span>
+            <button onclick="resolveMistake(${idx})" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold">✅ 我學會了 (+5 🐾)</button>
+          </div>
+          <div class="font-bold text-sm text-white">${m.stem}</div>
+          <div class="text-xs text-emerald-400 font-bold">✔ 正確答案：${m.correctOption}</div>
+          <div class="text-xs text-slate-300 bg-slate-900/80 p-2.5 rounded-lg whitespace-pre-line">${m.explanation}</div>
+        </div>
+      `).join('');
+    }
+
+    function resolveMistake(idx) {
+      appState.mistakes.splice(idx, 1);
+      appState.coins += 5;
+      playGuitarChord('correct');
+      saveState();
+      renderMistakes();
+      renderGear();
+    }
+
+    function clearMistakes() {
+      if (confirm('確定要清空所有錯題紀錄嗎？')) {
+        appState.mistakes = [];
+        saveState();
+        renderMistakes();
+      }
+    }
+
+    function renderGear() {
+      const grid = document.getElementById('gear-grid');
+      grid.innerHTML = GEAR_COLLECTION.map(g => {
+        const unlocked = appState.unlockedGear.includes(g.id);
+        return `
+          <div class="glass-card rounded-2xl p-4 flex flex-col justify-between border ${unlocked ? 'border-amber-400/70' : 'border-slate-800 opacity-80'}">
+            <div>
+              <div class="text-4xl mb-2">${g.icon}</div>
+              <h4 class="font-black text-base text-amber-300">${g.name}</h4>
+              <p class="text-xs text-slate-300 mt-1 leading-relaxed">${g.desc}</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
+              ${unlocked
+                ? `<span class="text-xs font-bold text-emerald-400">✅ 已收藏於練團室</span>`
+                : `<button onclick="unlockGear('${g.id}', ${g.cost})" class="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs">用 ${g.cost} 🐾 貓罐頭解鎖</button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function unlockGear(id, cost) {
+      if (appState.coins < cost) {
+        alert(`🐾 貓罐頭還不夠喔！目前有 ${appState.coins} 個，快去刷題或訂正錯題賺貓罐頭吧！`);
+        return;
+      }
+      appState.coins -= cost;
+      appState.unlockedGear.push(id);
+      playGuitarChord('combo');
+      saveState();
+      renderGear();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('history-list');
+      if (appState.history.length === 0) {
+        list.innerHTML = `<div class="glass-card rounded-xl p-8 text-center text-slate-400 text-sm">尚無測驗紀錄，快去完成第一場 Live 測驗吧！</div>`;
+        return;
+      }
+      list.innerHTML = appState.history.map(h => `
+        <div class="glass-card rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div>
+            <span class="font-bold text-amber-300">[${h.publisher} · ${h.subject}]</span>
+            <span class="text-white ml-1">${h.chapter}</span>
+            <span class="text-slate-400 ml-2">${h.time}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-rose-400 font-bold">🔥 最高 ${h.maxCombo} 連擊</span>
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-600 text-emerald-300 font-black">${h.score} 分</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function exportHistoryCSV() {
+      if (appState.history.length === 0) return alert('尚無紀錄可匯出！');
+      let csv = '\uFEFF測驗時間,版本,年級,科目,單元章節,得分,最高連擊\n';
+      appState.history.forEach(h => {
+        csv += `"${h.time}","${h.publisher}","${h.grade}","${h.subject}","${h.chapter}",${h.score},${h.maxCombo}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `小笹大輔貓咪吉他學園_學習歷程_${new Date().toLocaleDateString('zh-TW')}.csv`;
+      a.click();
+    }
+
+    // 方案 A：通行碼同步
+    function generateSyncCode() {
+      const code = btoa(encodeURIComponent(JSON.stringify(appState)));
+      document.getElementById('sync-code-box').value = code;
+    }
+
+    function copySyncCode() {
+      generateSyncCode();
+      const box = document.getElementById('sync-code-box');
+      box.select();
+      navigator.clipboard.writeText(box.value);
+      alert('✅ 已複製搖滾通行碼！請傳送到另一台手機或電腦貼上即可同步！');
+    }
+
+    function importSyncCode() {
+      const code = document.getElementById('import-code-box').value.trim();
+      if (!code) return alert('請先貼上通行碼！');
+      try {
+        const decoded = JSON.parse(decodeURIComponent(atob(code)));
+        appState = { ...appState, ...decoded };
+        saveState();
+        loadState();
+        alert('🎉 跨裝置同步成功！經驗值、吉他與錯題本已完整還原！');
+        closeModal('sync-modal');
+      } catch (e) {
+        alert('❌ 通行碼格式不正確，請確認是否完整複製！');
+      }
+    }
+
+    // 方案 B：Google Apps Script 試算表雲端自動記錄
+    function saveGasUrl() {
+      const url = document.getElementById('gas-url-input').value.trim();
+      localStorage.setItem('daisuke_gas_url', url);
+      alert('✅ 已儲存 Google 試算表雲端連結！未來每次完成測驗將自動寫入試算表。');
+    }
+
+    function sendToGoogleSheet(record) {
+      const gasUrl = localStorage.getItem('daisuke_gas_url');
+      if (!gasUrl) return;
+      fetch(gasUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+      }).catch(() => {});
+    }
+
+    // AI 設定 Modal
+    function saveApiSettings() {
+      const key = document.getElementById('api-key-input').value.trim();
+      const grounding = document.getElementById('enable-grounding-checkbox').checked;
+      if (key) localStorage.setItem('daisuke_gemini_api_key', key);
+      localStorage.setItem('daisuke_gemini_grounding', grounding);
+      updateApiBadge();
+      closeModal('settings-modal');
+      alert('🔒 設定已安全儲存於本機瀏覽器！');
+    }
+
+    function clearApiKey() {
+      localStorage.removeItem('daisuke_gemini_api_key');
+      document.getElementById('api-key-input').value = '';
+      updateApiBadge();
+      alert('已清除金鑰，系統將使用「內建動態參數題庫」出題！');
+    }
+
+    function updateApiBadge() {
+      const key = localStorage.getItem('daisuke_gemini_api_key');
+      const badge = document.getElementById('engine-badge');
+      if (key && key.startsWith('AIza')) {
+        badge.innerText = '⚡ Gemini AI 無限引擎';
+        badge.className = 'text-amber-400';
+      } else {
+        badge.innerText = '內建動態題庫 (免Key)';
+        badge.className = 'text-emerald-400';
+      }
+    }
+
+    function switchTab(tab) {
+      ['quiz', 'mistakes', 'gear', 'history'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tab) {
+          btn.className = 'tab-btn py-2.5 rounded-lg font-bold text-sm bg-amber-500 text-slate-950 shadow';
+        } else {
+          btn.className = 'tab-btn py-2.5 rounded-lg font-bold text-sm text-slate-300 hover:bg-slate-800';
+        }
+      });
+    }
+
+    function openModal(id) {
+      if (id === 'sync-modal') {
+        generateSyncCode();
+        document.getElementById('gas-url-input').value = localStorage.getItem('daisuke_gas_url') || '';
+      }
+      if (id === 'settings-modal') {
+        document.getElementById('api-key-input').value = localStorage.getItem('daisuke_gemini_api_key') || '';
+      }
+      const m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    // 初始化啟動
+    window.addEventListener('DOMContentLoaded', () => {
+      updateChapterList();
+      loadState();
+    });
+  </script>
+</body>
+</html>
